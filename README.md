@@ -63,32 +63,33 @@ where `speed` is the shutter speed as a fraction of a second (1/N).
 where `duration` is the time to wait after the completion of the previous 
 command in seconds.
 
-## Design
+## Example
 
-* auto detect camera.
-* load command set for camera.
-* iterate yaml directives.
+The following is an example YAML script that brackets exposures one stop down,
+and one stop up.
 
-## Gphoto2 command arguments of interest
-
---auto-detect
-    detect attached camera
-    can grep output for camera manufacturer.
---capture-image
-    take a picture.
---set-config <entry>=<value>
-    entry is the path value of interest from --list-config
-    value is the actual value setting, not the index.
---set-config-index <entry>=<value>
-    entry is the path value of interest from --list-config
-    value is the index of the value wanted.
-
-### Nikon entries of interest
-
-/main/imgsettings/iso
-/main/capturesetting/f-number
-/main/capturesettings/shutterspeed (as decimal)
-/main/capturesettings/shutterspeed2 (as fraction)
+    ---
+    cmd: iso
+    value: 100
+    ---
+    cmd: aperture
+    value: f/8
+    ---
+    cmd: shutter
+    value: 1/60
+    ---
+    cmd: capture
+    ---
+    cmd: shutter
+    value: 1/30
+    ---
+    cmd: capture
+    --
+    cmd: shutter
+    value: 1/125
+    ---
+    cmd: capture
+   
 
 ## License
 
