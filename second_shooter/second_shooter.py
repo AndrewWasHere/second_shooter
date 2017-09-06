@@ -166,7 +166,7 @@ def load_camera_settings(camera: typing.Union[str, None]) -> dict:
     if camera is None:
         camera = autodetect_camera()
 
-    for model in ('Nikon', ):
+    for model in ('Canon', 'Nikon'):
         if model in camera:
             break
     else:

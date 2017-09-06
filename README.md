@@ -2,25 +2,36 @@
 
 Scripted camera control.
 
-During the Great American Eclipse, I spent way too much time with my head down,
-adjusting camera settings during totality instead of looking around. Afterwards,
-I swore that next time, I would automate the shooting process. This is the
-result.
+During the 2017 Great American Eclipse, I spent way too much time with my head 
+down, adjusting camera settings during totality instead of looking around. 
+Afterwards, I swore that next time, I would automate the shooting process. This 
+is the result.
 
 Script the camera control with [YAML](http://yaml.org), and run 
-second_shooter.py with that file. Second shooter will step through the YAML, 
-and execute the commands in order.
+second_shooter.py with that file. 
+
+    $ python second_shooter.py <script.yaml>
+
+Second shooter will step through the YAML, and execute the commands in order.
+
+If autodetect does not work, or you're controlling multiple cameras with one
+computer, you can specify the camera name and port on the command line.
+
+    $ python second_shooter.py --camera [camera] --port [port] <script.yaml>
+    
+Where `[camera]` is the gphoto2 camera name, and `[port]` is the gphoto2 port
+name.
 
 ## Requirements
 
 * Python 3.5 or greater.
-* gphoto2 command line interface.
+* [gphoto2](http://gphoto.org/) command line interface.
 * gphoto2-compatible camera attached to the computer.
 
 ## Commands
 
-Camera commands are written as YAML directives. Directives in YAML are
-separated by `---`
+Camera commands are written as YAML directives. Directives in YAML start with a
+`---`
 
 ### Capture
 
