@@ -8,19 +8,27 @@ https://opensource.org/licenses/BSD-3-Clause
 """
 from unittest import mock
 
+from second_shooter.second_shooter import SecondShooter
+
 
 def test_aperture(shooter):
+    gold_apertures = [5.6, 8.0, 11.0]
+
     # Shooter camera is specified in the tests.
     with mock.patch(
         'second_shooter.second_shooter.execute'
-    ) as mock_execute:
+    ) as mock_execute, mock.patch.object(
+        SecondShooter,
+        'get_aperture_settings',
+        return_value=gold_apertures
+    ):
         shooter.aperture(11)
 
     mock_execute.assert_called_with(
         'gphoto2 '
         '--camera "Nikon" '
         '--port "port" '
-        '--set-config /main/capturesettings/f-number=11'
+        '--set-config-index /main/capturesettings/f-number=2'
     )
 
     # Force it to default.
@@ -29,10 +37,14 @@ def test_aperture(shooter):
 
     with mock.patch(
         'second_shooter.second_shooter.execute'
-    ) as mock_execute:
+    ) as mock_execute, mock.patch.object(
+        SecondShooter,
+        'get_aperture_settings',
+        return_value=gold_apertures
+    ):
         shooter.aperture(11)
 
     mock_execute.assert_called_with(
         'gphoto2 '
-        '--set-config /main/capturesettings/f-number=11'
+        '--set-config-index /main/capturesettings/f-number=2'
     )
