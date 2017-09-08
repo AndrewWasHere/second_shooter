@@ -55,7 +55,7 @@ class SecondShooter:
         if self._aperture_settings is None:
             self._aperture_settings = self.get_aperture_settings()
 
-        idx = aperture_index(value, self._aperture_settings)
+        idx = settings_index(value, self._aperture_settings)
 
         _logger.info(
             'Setting aperture to %s (requested %s).',
@@ -98,22 +98,31 @@ class SecondShooter:
         execute(cmd)
 
     def iso(self, value, **_):
-        _logger.info('Setting ISO to %s.', value)
+        if self._iso_settings is None:
+            self._iso_settings = self.get_iso_settings()
+
+        idx = settings_index(value, self._iso_settings)
+
+        _logger.info(
+            'Setting ISO to %s (requested %s).',
+            self._iso_settings[idx],
+            value
+        )
 
         cmd = (
             'gphoto2 '
             '--camera "{camera}" '
             '--port "{port}" '
-            '--set-config {entry}={value}'.format(
+            '--set-config-index {entry}={index}'.format(
                 camera=self._camera,
                 port=self._port,
                 entry=self._camera_settings['iso'],
-                value=value
+                index=idx
             )
             if self._camera else
-            'gphoto2 --set-config {entry}={value}'.format(
+            'gphoto2 --set-config-index {entry}={index}'.format(
                 entry=self._camera_settings['iso'],
-                value=value
+                index=idx
             )
         )
         execute(cmd)
@@ -171,9 +180,36 @@ class SecondShooter:
                 for value in parse_settings(result.stdout.decode())
             ]
         else:
-            raise ValueError('Unable to get aperture settings from camera')
+            raise ValueError('Unable to get aperture settings from camera.')
 
         return aperture_settings
+
+    def get_iso_settings(self):
+        """Retrieve iso settings from camera."""
+        cmd = (
+            'gphoto2 '
+            '--camera "{camera}" '
+            '--port "{port}" '
+            '--get-config {entry}'.format(
+                camera=self._camera,
+                port=self._port,
+                entry=self._camera_settings['iso']
+            )
+            if self._camera else
+            'gphoto2 --get-config {entry}'.format(
+                entry=self._camera_settings['iso']
+            )
+        )
+        result = execute(cmd)
+        if result.returncode == 0:
+            iso_settings = [
+                int(value)
+                for value in parse_settings(result.stdout.decode())
+            ]
+        else:
+            raise ValueError('Unable to get ISO settings from camera.')
+
+        return iso_settings
 
 
 def autodetect_camera() -> str:
@@ -322,7 +358,7 @@ def aperture_value(val: str) -> float:
     return value
 
 
-def aperture_index(val: float, settings: list) -> int:
+def settings_index(val: float, settings: list) -> int:
     """Return index into settings that has nearest value to val.
 
     Args:
