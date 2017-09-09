@@ -22,7 +22,7 @@ def test_aperture(shooter):
         'get_aperture_settings',
         return_value=gold_apertures
     ):
-        shooter.aperture(11)
+        shooter.aperture('f/11')
 
     mock_execute.assert_called_with(
         'gphoto2 '
@@ -42,7 +42,7 @@ def test_aperture(shooter):
         'get_aperture_settings',
         return_value=gold_apertures
     ):
-        shooter.aperture(11)
+        shooter.aperture('f/11')
 
     mock_execute.assert_called_with(
         'gphoto2 '

@@ -20,7 +20,7 @@ def test_load_camera_settings_nikon():
     assert isinstance(config, dict)
     assert config.get('aperture') == '/main/capturesettings/f-number'
     assert config.get('iso') == '/main/imgsettings/iso'
-    assert config.get('shutter') == '/main/capturesettings/shutterspeed2'
+    assert config.get('shutter') == '/main/capturesettings/shutterspeed'
 
 
 def test_load_camera_settings_unknown_model():

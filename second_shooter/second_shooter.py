@@ -26,6 +26,12 @@ class SecondShooter:
         camera: typing.Union[str, None] = None,
         port: typing.Union[str, None] = None
     ):
+        """Camera Controller.
+
+        Args:
+            camera: gphoto2 camera identifier, or None for autodetect.
+            port:  gphoto2 port identifier, or None for autodetect.
+        """
         if (camera and not port) or (not camera and port):
             raise ValueError(
                 'Camera and port must both be specified when overriding '
@@ -47,14 +53,26 @@ class SecondShooter:
         self._shutter_settings = None
 
     def run(self, script: typing.Union[io.TextIOBase, str]):
+        """Run script.
+
+        Args:
+            script: YAML script to run.
+        """
         for step in yaml.load_all(script):
             if step:
                 self._command.get(step.get('cmd'), self.default)(**step)
 
-    def aperture(self, value, **_):
+    def aperture(self, value: str, **_):
+        """Set camera aperture.
+
+        Args:
+            value: new aperture as f-number.
+                e.g f/8
+        """
         if self._aperture_settings is None:
             self._aperture_settings = self.get_aperture_settings()
 
+        value = aperture_value(value)
         idx = settings_index(value, self._aperture_settings)
 
         _logger.info(
@@ -82,6 +100,7 @@ class SecondShooter:
         execute(cmd)
 
     def capture(self, **_):
+        """Command camera to take picture."""
         _logger.info('Capturing image.')
 
         cmd = (
@@ -97,7 +116,12 @@ class SecondShooter:
         )
         execute(cmd)
 
-    def iso(self, value, **_):
+    def iso(self, value: int, **_):
+        """Set camera ISO.
+
+        Args:
+            value: New ISO value
+        """
         if self._iso_settings is None:
             self._iso_settings = self.get_iso_settings()
 
@@ -127,33 +151,51 @@ class SecondShooter:
         )
         execute(cmd)
 
-    def shutter(self, value, **_):
-        _logger.info('Setting shutter speed to %s.', value)
+    def shutter(self, value: str, **_):
+        """Set camera shutter speed.
+
+        Args:
+            value: shutter speed as decimal value or fraction of a second.
+                e.g 1/125 or 2.5.
+        """
+        if self._shutter_settings is None:
+            self._shutter_settings = self.get_shutter_settings()
+
+        value = shutter_value(value)
+        idx = settings_index(value, self._shutter_settings)
+
+        _logger.info(
+            'Setting shutter speed to %s (requested %s).',
+            self._shutter_settings[idx],
+            value
+        )
 
         cmd = (
             'gphoto2 '
             '--camera "{camera}" '
             '--port "{port}" '
-            '--set-config {entry}={value}'.format(
+            '--set-config-index {entry}={index}'.format(
                 camera=self._camera,
                 port=self._port,
                 entry=self._camera_settings['shutter'],
-                value=value
+                index=idx
             )
             if self._camera else
-            'gphoto2 --set-config {entry}={value}'.format(
+            'gphoto2 --set-config-index {entry}={index}'.format(
                 entry=self._camera_settings['shutter'],
-                value=value
+                index=idx
             )
         )
         execute(cmd)
 
     def wait(self, value: float, **_):
+        """Pause before next command."""
         _logger.info('Waiting %s seconds.', value)
 
         time.sleep(float(value))
 
     def default(self, cmd: str, **kwargs):
+        """Unknown commands execute this."""
         _logger.error('Unknown command, %s', cmd)
         _logger.debug('%s', kwargs)
 
@@ -184,8 +226,12 @@ class SecondShooter:
 
         return aperture_settings
 
-    def get_iso_settings(self):
-        """Retrieve iso settings from camera."""
+    def get_iso_settings(self) -> list:
+        """Retrieve iso settings from camera.
+
+        Returns:
+            List of ISO values. Indexes correspond to gphoto2 indexes.
+        """
         cmd = (
             'gphoto2 '
             '--camera "{camera}" '
@@ -210,6 +256,35 @@ class SecondShooter:
             raise ValueError('Unable to get ISO settings from camera.')
 
         return iso_settings
+
+    def get_shutter_settings(self):
+        """Retrieve shutter settings from camera."""
+        cmd = (
+            'gphoto2 '
+            '--camera "{camera}" '
+            '--port "{port}" '
+            '--get-config {entry}'.format(
+                camera=self._camera,
+                port=self._port,
+                entry=self._camera_settings['shutter']
+            )
+            if self._camera else
+            'gphoto2 --get-config {entry}'.format(
+                entry=self._camera_settings['shutter']
+            )
+        )
+        result = execute(cmd)
+        if result.returncode == 0:
+            shutter_settings = [
+                shutter_value(value)
+                for value in parse_settings(result.stdout.decode())
+            ]
+            while isinstance(shutter_settings[-1], str):
+                shutter_settings.pop()
+        else:
+            raise ValueError('Unable to get shutter settings from camera.')
+
+        return shutter_settings
 
 
 def autodetect_camera() -> str:
@@ -356,6 +431,37 @@ def aperture_value(val: str) -> float:
         value = float(val.split('/')[-1])
 
     return value
+
+
+def shutter_value(val: str) -> typing.Union[float, str]:
+    """Convert val to a standard shutter speed value.
+
+    val format depends on the camera manufacturer.
+
+    YAML: 1/N
+    Canon: TBD
+    Nikon: <decimal>s e.g. 0.1250s or fraction, or string.
+
+    Args:
+        val:
+
+    Returns:
+        shutter speed or 'error'
+    """
+    tokens = val.split('/')
+    if len(tokens) < 2:
+        # Decimal format.
+        try:
+            shutter_speed = float(tokens[0].strip('s'))
+        except ValueError:
+            # Not a number.
+            shutter_speed = 'error'
+
+    else:
+        # Fractional format.
+        shutter_speed = float(tokens[0]) / float(tokens[1])
+
+    return shutter_speed
 
 
 def settings_index(val: float, settings: list) -> int:
