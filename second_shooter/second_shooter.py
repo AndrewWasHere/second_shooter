@@ -433,7 +433,7 @@ def aperture_value(val: str) -> float:
     return value
 
 
-def shutter_value(val: str) -> typing.Union[float, str]:
+def shutter_value(val: typing.Union[str, int, float]) -> typing.Union[float, str]:
     """Convert val to a standard shutter speed value.
 
     val format depends on the camera manufacturer.
@@ -443,11 +443,14 @@ def shutter_value(val: str) -> typing.Union[float, str]:
     Nikon: <decimal>s e.g. 0.1250s or fraction, or string.
 
     Args:
-        val:
+        val: shutter speed.
 
     Returns:
         shutter speed or 'error'
     """
+    if not isinstance(val, str):
+        return val
+
     tokens = val.split('/')
     if len(tokens) < 2:
         # Decimal format.
