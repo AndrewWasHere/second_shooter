@@ -33,6 +33,9 @@ name.
 Camera commands are written as YAML directives. Directives in YAML start with a
 `---`
 
+Note that the YAML parser is very persnickety about formatting, so test your 
+scripts! Badly formatted YAML will cause the program to quit.
+
 ### Capture
 
 Take a picture.
@@ -95,7 +98,7 @@ and one stop up.
     value: 1/30
     ---
     cmd: capture
-    --
+    ---
     cmd: shutter
     value: 1/125
     ---
