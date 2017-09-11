@@ -1,5 +1,6 @@
 {
   "aperture": "/main/settings/aperture",
   "iso": "/main/settings/iso",
-  "shutter": "/main/settings/shutterspeed"
+  "shutter": "/main/settings/shutterspeed",
+  "target": "/main/settings/capturetarget"
 }
