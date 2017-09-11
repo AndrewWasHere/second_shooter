@@ -52,6 +52,8 @@ class SecondShooter:
         self._iso_settings = None
         self._shutter_settings = None
 
+        self.set_target_settings()
+
     def run(self, script: typing.Union[io.TextIOBase, str]):
         """Run script.
 
@@ -188,7 +190,7 @@ class SecondShooter:
         )
         execute(cmd)
 
-    def wait(self, value: float, **_):
+    def wait(self, value: typing.Union[float, str], **_):
         """Pause before next command."""
         _logger.info('Waiting %s seconds.', value)
 
@@ -286,6 +288,54 @@ class SecondShooter:
 
         return shutter_settings
 
+    def set_target_settings(self):
+        """Set capture target settings on camera."""
+        cmd = (
+            'gphoto2 '
+            '--camera "{camera}" '
+            '--port "{port}" '
+            '--get-config {entry}'.format(
+                camera=self._camera,
+                port=self._port,
+                entry=self._camera_settings['target']
+            )
+            if self._camera else
+            'gphoto2 --get-config {entry}'.format(
+                entry=self._camera_settings['target']
+            )
+        )
+        result = execute(cmd)
+        if result.returncode == 0:
+            for idx, value in enumerate(parse_settings(result.stdout.decode())):
+                if 'card' in value:
+                    _logger.info('Setting camera target store to memory card.')
+                    cmd = (
+                        'gphoto2 '
+                        '--camera "{camera}" '
+                        '--port "{port}" '
+                        '--set-config-index {entry}={index}'.format(
+                            camera=self._camera,
+                            port=self._port,
+                            entry=self._camera_settings['target'],
+                            index=idx
+                        )
+                        if self._camera else
+                        'gphoto2 --set-config-index {entry}={index}'.format(
+                            entry=self._camera_settings['target'],
+                            index=idx
+                        )
+                    )
+                    execute(cmd)
+                    break
+
+            else:
+                _logger.info('Using default target store.')
+        else:
+            _logger.info(
+                'Unable to get target settings from camera. '
+                'Using default target store.'
+            )
+
 
 def autodetect_camera() -> str:
     """Auto-detect camera using gphoto2.
@@ -376,25 +426,6 @@ def parse_settings(settings: str):
         Choice: 1 125
         Choice: 2 160
         Choice: 3 200
-        Choice: 4 250
-        Choice: 5 320
-        Choice: 6 400
-        Choice: 7 500
-        Choice: 8 640
-        Choice: 9 800
-        Choice: 10 1000
-        Choice: 11 1250
-        Choice: 12 1600
-        Choice: 13 2000
-        Choice: 14 2500
-        Choice: 15 3200
-        Choice: 16 4000
-        Choice: 17 5000
-        Choice: 18 6400
-        Choice: 19 8000
-        Choice: 20 10000
-        Choice: 21 12800
-        Choice: 22 25600
 
     Args:
         settings: Returned string from gphoto2 --get-config <setting>
@@ -433,7 +464,9 @@ def aperture_value(val: str) -> float:
     return value
 
 
-def shutter_value(val: typing.Union[str, int, float]) -> typing.Union[float, str]:
+def shutter_value(
+    val: typing.Union[str, int, float]
+) -> typing.Union[float, str]:
     """Convert val to a standard shutter speed value.
 
     val format depends on the camera manufacturer.

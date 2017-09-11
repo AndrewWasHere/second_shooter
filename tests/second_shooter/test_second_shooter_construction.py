@@ -19,7 +19,10 @@ def test_construction_defaults():
     with mock.patch(
         'second_shooter.second_shooter.load_camera_settings',
         return_value=test_settings
-    ) as mock_load_camera_settings:
+    ) as mock_load_camera_settings, mock.patch.object(
+        SecondShooter,
+        'set_target_settings'
+    ):
         shooter = SecondShooter()
 
         assert mock_load_camera_settings.called
@@ -41,7 +44,10 @@ def test_construction_arguments():
     with mock.patch(
         'second_shooter.second_shooter.load_camera_settings',
         return_value=test_settings
-    ) as mock_load_camera_settings:
+    ) as mock_load_camera_settings, mock.patch.object(
+        SecondShooter,
+        'set_target_settings'
+    ):
         shooter = SecondShooter('camera', 'port')
 
         assert mock_load_camera_settings.called
